@@ -127,14 +127,20 @@ function parseClientTextHeuristic(history) {
   let deadline = null;
   let references = null;
   let budget = null;
+  
+  // 1. Extract Design Type (Context & Priority aware to prevent logo reference hijacking)
+  const isDeck = fullText.includes('deck') || fullText.includes('presentation') || fullText.includes('slides') || fullText.includes('pitch') || fullText.includes('powerpoint') || fullText.includes('keynote');
+  const isSocial = fullText.includes('social media') || fullText.includes('marketing') || fullText.includes('ad') || fullText.includes('instagram') || fullText.includes('facebook') || fullText.includes('banner') || fullText.includes('creative');
+  const isLogoRequest = fullText.includes('need a logo') || fullText.includes('design a logo') || fullText.includes('create a logo') || fullText.includes('logo for') || fullText.includes('new logo') || fullText.includes('style guide') || fullText.includes('brand identity') || fullText.includes('branding') || (fullText.includes('logo') && !isDeck && !isSocial);
 
-  // 1. Extract Design Type
-  if (fullText.includes('logo') || fullText.includes('style guide') || fullText.includes('brand identity') || fullText.includes('branding')) {
-    design_type = 'Logo & Brand Identity';
-  } else if (fullText.includes('deck') || fullText.includes('presentation') || fullText.includes('slides') || fullText.includes('pitch')) {
+  if (isDeck) {
     design_type = 'Presentation Deck';
-  } else if (fullText.includes('social media') || fullText.includes('marketing') || fullText.includes('ad') || fullText.includes('instagram') || fullText.includes('facebook') || fullText.includes('banner') || fullText.includes('creative')) {
+  } else if (isLogoRequest) {
+    design_type = 'Logo & Brand Identity';
+  } else if (isSocial) {
     design_type = 'Social Media / Marketing Creatives';
+  } else {
+    design_type = 'Social Media / Marketing Creatives'; // fallback default
   }
 
   // 2. Extract Purpose
