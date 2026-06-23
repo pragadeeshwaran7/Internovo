@@ -364,9 +364,9 @@ async function processTriageFlow(newClientReply = null) {
 function routeRequest(design_type) {
   const type = (design_type || '').toLowerCase();
   
-  if (type.includes('logo') || type.includes('brand') || type.includes('identity')) {
+  if (type.includes('logo') || type.includes('brand') || type.includes('identity') || type.includes('style guide') || type.includes('guidelines') || type.includes('branding') || type.includes('typography') || type.includes('color palette')) {
     return 'Priya'; // Priya owns Brand Identity
-  } else if (type.includes('deck') || type.includes('presentation') || type.includes('slides')) {
+  } else if (type.includes('deck') || type.includes('presentation') || type.includes('slides') || type.includes('pitch') || type.includes('powerpoint') || type.includes('keynote') || type.includes('pdf report') || type.includes('proposal')) {
     return 'Sameer'; // Sameer owns Decks & Presentations
   } else {
     return 'Riya'; // Riya owns Social/Marketing
