@@ -122,55 +122,64 @@ async function callGroqAPI(history) {
 function parseClientTextHeuristic(history) {
   const fullText = history.filter(m => m.role === 'user').map(m => m.content).join(" | ").toLowerCase();
   
-  let design_type = state.extracted.design_type;
-  let purpose = state.extracted.purpose;
-  let deadline = state.extracted.deadline;
-  let references = state.extracted.references;
-  let budget = state.extracted.budget;
+  let design_type = null;
+  let purpose = null;
+  let deadline = null;
+  let references = null;
+  let budget = null;
 
-  if (!design_type) {
-    if (fullText.includes('logo') || fullText.includes('style guide') || fullText.includes('brand identity') || fullText.includes('branding')) {
-      design_type = 'Logo & Brand Identity';
-    } else if (fullText.includes('deck') || fullText.includes('presentation') || fullText.includes('slides') || fullText.includes('pitch')) {
-      design_type = 'Presentation Deck';
-    } else if (fullText.includes('social media') || fullText.includes('marketing') || fullText.includes('ad') || fullText.includes('instagram') || fullText.includes('facebook') || fullText.includes('banner')) {
-      design_type = 'Social Media / Marketing Creatives';
-    }
+  // Extract Design Type
+  if (fullText.includes('logo') || fullText.includes('style guide') || fullText.includes('brand identity') || fullText.includes('branding')) {
+    design_type = 'Logo & Brand Identity';
+  } else if (fullText.includes('deck') || fullText.includes('presentation') || fullText.includes('slides') || fullText.includes('pitch')) {
+    design_type = 'Presentation Deck';
+  } else if (fullText.includes('social media') || fullText.includes('marketing') || fullText.includes('ad') || fullText.includes('instagram') || fullText.includes('facebook') || fullText.includes('banner')) {
+    design_type = 'Social Media / Marketing Creatives';
   }
 
-  if (!purpose) {
-    const purposeMatch = fullText.match(/(?:for our|logo is for|used for|purpose is)\s+([^.\n,]+)/i);
-    if (purposeMatch && purposeMatch[1]) {
-      purpose = purposeMatch[1].trim();
-    } else if (fullText.includes('coffee packaging') || fullText.includes('packaging')) {
-      purpose = 'Coffee packaging and website';
-    }
+  // Extract Purpose
+  const purposeMatch = fullText.match(/(?:for our|for my|logo is for|used for|purpose is|deck for|presentation for|creatives for|logo for)\s+([^.\n,]+)/i);
+  if (purposeMatch && purposeMatch[1]) {
+    purpose = capitalizeFirstLetter(purposeMatch[1].trim());
+  } else if (fullText.includes('coffee packaging') || fullText.includes('packaging')) {
+    purpose = 'Coffee packaging and website';
+  } else if (fullText.includes('for my company')) {
+    purpose = 'Company pitch deck';
   }
 
-  if (!deadline) {
-    const deadlineMatch = fullText.match(/(?:in|by|deadline is|need it in)\s+(\d+\s+days|friday|next week|tomorrow|[\w\s\d]+day)/i);
-    if (deadlineMatch && deadlineMatch[1]) {
-      deadline = deadlineMatch[1].trim();
-    } else if (fullText.includes('10 days')) {
-      deadline = '10 Days';
-    }
+  // Extract Deadline
+  const deadlineMatch = fullText.match(/(?:in|by|deadline is|need it in|due in|due)\s+(\d+\s+weeks?|\d+\s+days?|friday|next week|tomorrow|[\w\s\d]+day)/i);
+  if (deadlineMatch && deadlineMatch[1]) {
+    deadline = capitalizeFirstLetter(deadlineMatch[1].trim());
+  } else if (fullText.includes('10 days')) {
+    deadline = '10 Days';
+  } else if (fullText.includes('one week') || fullText.includes('1 week')) {
+    deadline = '1 Week';
   }
 
+  // Extract References
   if (fullText.includes('earthy tones') || fullText.includes('minimal') || fullText.includes('modern')) {
     let refs = [];
     if (fullText.includes('earthy tones')) refs.push('Earthy tones');
     if (fullText.includes('minimal')) refs.push('Minimal');
     if (fullText.includes('modern')) refs.push('Modern');
-    if (fullText.includes('reference') || fullText.includes('attached')) refs.push('References attached');
+    if (fullText.includes('reference') || fullText.includes('attached') || fullText.includes('mood board') || fullText.includes('logo is attached')) refs.push('References attached');
     references = refs.join(', ');
-  } else if (!references && (fullText.includes('mood board') || fullText.includes('attached'))) {
+  } else if (fullText.includes('no brand guidelines') || fullText.includes('no guidelines')) {
+    references = 'None / Clean slate';
+  } else if (fullText.includes('mood board') || fullText.includes('attached') || fullText.includes('guidelines') || fullText.includes('logo is attached')) {
     references = 'References attached';
   }
 
-  if (!budget) {
-    const budgetMatch = fullText.match(/(?:\$|budget is|budget of)\s*(\d+[\s\-\d]*|\d+k)/i);
-    if (budgetMatch) {
-      budget = fullText.includes('$500-$800') ? '$500 - $800' : budgetMatch[0].toUpperCase();
+  // Extract Budget
+  const budgetMatch = fullText.match(/(?:\$|budget is|budget of|rs\s*|inr\s*)\s*(\d+[\s\-\d]*|\d+k)/i);
+  if (budgetMatch) {
+    if (fullText.includes('$500-$800')) {
+      budget = '$500 - $800';
+    } else if (fullText.includes('rs 4000') || fullText.includes('rs. 4000')) {
+      budget = 'Rs 4,000';
+    } else {
+      budget = budgetMatch[0].toUpperCase();
     }
   }
 
@@ -191,8 +200,35 @@ function parseClientTextHeuristic(history) {
   };
 }
 
+function capitalizeFirstLetter(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 // Main Triage Flow (Async call to Groq)
 async function processTriageFlow(newClientReply = null) {
+  // Check if we need to start a new session because the previous one was routed
+  if (state.status === 'routed') {
+    state.status = 'awaiting_triage';
+    state.assigned_to = null;
+    state.extracted = {
+      design_type: null,
+      purpose: null,
+      deadline: null,
+      references: null,
+      budget: null
+    };
+    state.conversationHistory = [];
+    
+    // Add visual divider in chat thread
+    const divider = document.createElement('div');
+    divider.className = 'chat-divider';
+    divider.innerHTML = '<span class="divider-text">New Request Session Started</span>';
+    elEmailThread.appendChild(divider);
+    
+    // Reset indicators in UI
+    updateExtractionUI(false);
+  }
+
   // Update state & UI to show thinking/loading
   elTriageStatusText.textContent = 'AI Processing...';
   elTriageStatusText.className = 'status-badge status-awaiting pulse';
@@ -342,10 +378,25 @@ function renderMessage(sender, text) {
 
 // AI Follow-up response
 function generateAIResponse(missing) {
+  const designType = (state.extracted.design_type || '').toLowerCase();
+  let assetType = "logo/design";
+  let purposeExamples = "coffee packaging, website, pitch deck";
+  
+  if (designType.includes('logo') || designType.includes('brand') || designType.includes('identity')) {
+    assetType = "logo";
+    purposeExamples = "website, packaging, signage";
+  } else if (designType.includes('deck') || designType.includes('presentation') || designType.includes('slides')) {
+    assetType = "presentation deck";
+    purposeExamples = "investor pitch, sales presentation, internal meeting";
+  } else if (designType.includes('social') || designType.includes('marketing') || designType.includes('ad')) {
+    assetType = "marketing creatives";
+    purposeExamples = "Instagram ad, website banner, campaign launch";
+  }
+
   let reply = "Thanks for reaching out! To get started, we need a few more details:\n\n";
   
   const questions = {
-    purpose: "• What is the logo/design being used for? (e.g. coffee packaging, website, pitch deck)",
+    purpose: `• What is the ${assetType} being used for? (e.g. ${purposeExamples})`,
     deadline: "• What is your desired deadline for this project?",
     budget: "• What is your estimated budget range?",
     design_type: "• What type of design assets do you need? (e.g., logo, presentation, social creatives)",
