@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuraTriage // Creative Agency Auto-Intake MVP</title>
+  <!-- Google Fonts: Outfit and Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo">
+          <span class="logo-dot"></span>
+          AURA<span class="logo-accent">TRIAGE</span>
+        </div>
+        <span class="badge badge-primary">MVP Prototype</span>
+      </div>
+      <div class="header-stats">
+        <div class="stat-pill">
+          <span class="stat-dot green pulse"></span>
+          <span class="stat-label">AI Engine: Active</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-label">Agency Roles: 3 Designers Assigned</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <main class="workspace-grid">
+      
+      <!-- Panel 1: Client Inbox Simulator -->
+      <section class="panel panel-client-simulator" id="panel-client">
+        <div class="panel-header">
+          <div class="panel-icon">✉️</div>
+          <h2>Client Email Simulator</h2>
+          <span class="panel-subtitle">Simulate client communication</span>
+        </div>
+        
+        <div class="simulator-card">
+          <div class="email-meta-header">
+            <div><strong>From:</strong> coffee.cult@client-inbox.com</div>
+            <div><strong>Subject:</strong> Brand design request & inquiries</div>
+            <div><strong>Status:</strong> <span class="status-badge status-awaiting" id="triage-status-text">Awaiting Triage</span></div>
+          </div>
+          
+          <div class="email-thread" id="email-thread">
+            <!-- Initial Client Message -->
+            <div class="message client-message">
+              <div class="message-header">
+                <span class="sender-name">Coffee Cult (Client)</span>
+                <span class="timestamp">Just now</span>
+              </div>
+              <div class="message-body">
+                "Hey, we need a logo for our new coffee brand. Something minimal and modern. We're thinking earthy tones. Let us know what you need from us!"
+              </div>
+            </div>
+            
+            <!-- Dynamic AI & Client replies go here -->
+          </div>
+
+          <!-- Quick Test Controls -->
+          <div class="simulator-controls">
+            <label for="client-reply-input" class="input-label">Type Client Response:</label>
+            <div class="textarea-wrapper">
+              <textarea id="client-reply-input" placeholder="Type here, or click one of the quick presets below to auto-complete..." rows="3"></textarea>
+            </div>
+            
+            <div class="preset-buttons">
+              <button class="btn btn-secondary btn-xs" id="preset-complete">
+                ⚡ Reply with Remaining Info (All Fields)
+              </button>
+              <button class="btn btn-secondary btn-xs" id="preset-partial">
+                ⌛ Reply with Partial Info (Only Purpose & Deadline)
+              </button>
+            </div>
+
+            <div class="action-buttons">
+              <button class="btn btn-primary btn-block" id="btn-submit-reply">
+                Send Reply & Re-run AI Triage
+              </button>
+              <button class="btn btn-reset btn-xs" id="btn-reset-demo">
+                🔄 Reset Demo Flow
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Panel 2: Live AI Extraction Inspector -->
+      <section class="panel panel-ai-inspector" id="panel-ai">
+        <div class="panel-header">
+          <div class="panel-icon">🧠</div>
+          <h2>AI Extraction Hub</h2>
+          <span class="panel-subtitle">What the system extracts & generates</span>
+        </div>
+
+        <div class="inspector-card">
+          <h3>Required Project Intake Fields</h3>
+          <div class="field-checklists">
+            <!-- Design Type -->
+            <div class="field-item" id="field-design_type">
+              <div class="field-status">
+                <span class="status-indicator icon-pending"></span>
+              </div>
+              <div class="field-content">
+                <div class="field-title">What is to be designed?</div>
+                <div class="field-value" id="val-design_type">Not extracted</div>
+              </div>
+            </div>
+
+            <!-- Purpose -->
+            <div class="field-item" id="field-purpose">
+              <div class="field-status">
+                <span class="status-indicator icon-pending"></span>
+              </div>
+              <div class="field-content">
+                <div class="field-title">What is it for?</div>
+                <div class="field-value" id="val-purpose">Not extracted</div>
+              </div>
+            </div>
+
+            <!-- Deadline -->
+            <div class="field-item" id="field-deadline">
+              <div class="field-status">
+                <span class="status-indicator icon-pending"></span>
+              </div>
+              <div class="field-content">
+                <div class="field-title">Desired Deadline?</div>
+                <div class="field-value" id="val-deadline">Not extracted</div>
+              </div>
+            </div>
+
+            <!-- References -->
+            <div class="field-item" id="field-references">
+              <div class="field-status">
+                <span class="status-indicator icon-pending"></span>
+              </div>
+              <div class="field-content">
+                <div class="field-title">Brand Guidelines / References?</div>
+                <div class="field-value" id="val-references">Not extracted</div>
+              </div>
+            </div>
+
+            <!-- Budget -->
+            <div class="field-item" id="field-budget">
+              <div class="field-status">
+                <span class="status-indicator icon-pending"></span>
+              </div>
+              <div class="field-content">
+                <div class="field-title">Budget Range?</div>
+                <div class="field-value" id="val-budget">Not extracted</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="completeness-bar-container">
+            <div class="completeness-label">
+              <span>Overall Intake Completeness</span>
+              <span id="completeness-percent">0%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-bar" id="progress-bar-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- JSON Live Output -->
+          <div class="json-inspector">
+            <div class="json-header">
+              <span>🗂️ Live LLM Output Payload (JSON)</span>
+              <span class="json-copy-btn" id="json-copy-btn">Copy JSON</span>
+            </div>
+            <pre class="json-body"><code id="json-code-block">{
+  "status": "idle"
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Panel 3: Agency Team Workspace -->
+      <section class="panel panel-routing-workspace" id="panel-workspace">
+        <div class="panel-header">
+          <div class="panel-icon">🎯</div>
+          <h2>Agency Team Workspaces</h2>
+          <span class="panel-subtitle">Routed design queues based on specialty</span>
+        </div>
+
+        <div class="team-workspace-columns">
+          
+          <!-- Priya Brand Identity -->
+          <div class="designer-column" id="col-priya">
+            <div class="designer-card-header bg-gradient-brand">
+              <div class="designer-avatar">P</div>
+              <div class="designer-info">
+                <h3>Priya</h3>
+                <span class="designer-role">Brand Identity & Logos</span>
+              </div>
+              <div class="ticket-count" id="count-priya">0</div>
+            </div>
+            <div class="designer-tickets-list" id="list-priya">
+              <div class="no-tickets-placeholder">No active tickets assigned</div>
+            </div>
+          </div>
+
+          <!-- Sameer Decks & Presentations -->
+          <div class="designer-column" id="col-sameer">
+            <div class="designer-card-header bg-gradient-decks">
+              <div class="designer-avatar">S</div>
+              <div class="designer-info">
+                <h3>Sameer</h3>
+                <span class="designer-role">Decks & Presentations</span>
+              </div>
+              <div class="ticket-count" id="count-sameer">0</div>
+            </div>
+            <div class="designer-tickets-list" id="list-sameer">
+              <div class="no-tickets-placeholder">No active tickets assigned</div>
+            </div>
+          </div>
+
+          <!-- Riya Social & Marketing -->
+          <div class="designer-column" id="col-riya">
+            <div class="designer-card-header bg-gradient-marketing">
+              <div class="designer-avatar">R</div>
+              <div class="designer-info">
+                <h3>Riya</h3>
+                <span class="designer-role">Social & Marketing Creatives</span>
+              </div>
+              <div class="ticket-count" id="count-riya">0</div>
+            </div>
+            <div class="designer-tickets-list" id="list-riya">
+              <div class="no-tickets-placeholder">No active tickets assigned</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
