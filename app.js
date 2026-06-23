@@ -71,7 +71,7 @@ Your task is to analyze the communication history with a client and extract the 
    If unknown, return null.
 2. purpose: What it is for (e.g. coffee packaging, website, investor pitch). If unknown or vague, return null.
 3. deadline: Desired deadline. If unknown, return null.
-4. references: Brand guidelines, color schemes, or references. If they mention earthy tones or clean/minimal, or references attached, capture it. If unknown, return null.
+4. references: Brand guidelines, color schemes, look-and-feel (e.g., minimal, aesthetic, earthy tones, clean, bold, vibrant), or references/assets attached. Capture all stylistic preferences mentioned by the client. If unknown, return null.
 5. budget: Budget range. Capture the budget in Indian Rupees (INR / ₹ / Rs). If the user specifies dollars, convert it to INR (e.g., $500-$800 is approximately ₹40,000 - ₹60,000). Always format the output with the ₹ symbol (e.g., ₹40,000 - ₹60,000 or ₹4,000). If unknown or not specified, return null.
 
 You MUST respond in JSON format matching this schema:
@@ -128,61 +128,130 @@ function parseClientTextHeuristic(history) {
   let references = null;
   let budget = null;
 
-  // Extract Design Type
+  // 1. Extract Design Type
   if (fullText.includes('logo') || fullText.includes('style guide') || fullText.includes('brand identity') || fullText.includes('branding')) {
     design_type = 'Logo & Brand Identity';
   } else if (fullText.includes('deck') || fullText.includes('presentation') || fullText.includes('slides') || fullText.includes('pitch')) {
     design_type = 'Presentation Deck';
-  } else if (fullText.includes('social media') || fullText.includes('marketing') || fullText.includes('ad') || fullText.includes('instagram') || fullText.includes('facebook') || fullText.includes('banner')) {
+  } else if (fullText.includes('social media') || fullText.includes('marketing') || fullText.includes('ad') || fullText.includes('instagram') || fullText.includes('facebook') || fullText.includes('banner') || fullText.includes('creative')) {
     design_type = 'Social Media / Marketing Creatives';
   }
 
-  // Extract Purpose
-  const purposeMatch = fullText.match(/(?:for our|for my|logo is for|used for|purpose is|deck for|presentation for|creatives for|logo for)\s+([^.\n,]+)/i);
-  if (purposeMatch && purposeMatch[1]) {
-    purpose = capitalizeFirstLetter(purposeMatch[1].trim());
-  } else if (fullText.includes('coffee packaging') || fullText.includes('packaging')) {
-    purpose = 'Coffee packaging and website';
-  } else if (fullText.includes('for my company')) {
-    purpose = 'Company pitch deck';
+  // 2. Extract Purpose
+  const purposeKeywords = ['packaging', 'website', 'signage', 'pitch deck', 'investor pitch', 'social media', 'instagram', 'facebook', 'ad campaign', 'banner', 'business card', 'logo design'];
+  purposeKeywords.forEach(kw => {
+    if (fullText.includes(kw)) {
+      purpose = capitalizeFirstLetter(kw);
+    }
+  });
+  
+  if (!purpose) {
+    const purposeMatch = fullText.match(/(?:for our|for my|logo is for|used for|purpose is|deck for|presentation for|creatives for|logo for|project is)\s+([^.\n,]+)/i);
+    if (purposeMatch && purposeMatch[1]) {
+      purpose = capitalizeFirstLetter(purposeMatch[1].trim());
+    } else if (fullText.includes('coffee packaging') || fullText.includes('packaging')) {
+      purpose = 'Coffee packaging and website';
+    } else if (fullText.includes('for my company')) {
+      purpose = 'Company pitch deck';
+    }
   }
 
-  // Extract Deadline
-  const deadlineMatch = fullText.match(/(?:in|by|deadline is|need it in|due in|due)\s+(\d+\s+weeks?|\d+\s+days?|friday|next week|tomorrow|[\w\s\d]+day)/i);
-  if (deadlineMatch && deadlineMatch[1]) {
-    deadline = capitalizeFirstLetter(deadlineMatch[1].trim());
-  } else if (fullText.includes('10 days')) {
-    deadline = '10 Days';
-  } else if (fullText.includes('one week') || fullText.includes('1 week')) {
-    deadline = '1 Week';
+  // 3. Extract Deadline
+  const deadlineKeywords = ['asap', 'urgent', 'tomorrow', 'next week', 'end of week', 'end of month', '10 days', 'one week', '1 week', '2 weeks', '3 weeks', 'a month'];
+  deadlineKeywords.forEach(kw => {
+    if (fullText.includes(kw)) {
+      deadline = capitalizeFirstLetter(kw);
+    }
+  });
+
+  if (!deadline) {
+    const deadlineMatch = fullText.match(/(?:due|deadline is|need it|by|in|timeline)\s*(?:is|in|by|for)?\s*(\d+\s*days?|\d+\s*weeks?|friday|monday|tuesday|wednesday|thursday|saturday|sunday|tomorrow|next week|[\w\s\d]+day|[\w\s\d]+week)/i);
+    if (deadlineMatch && deadlineMatch[1]) {
+      let candidate = deadlineMatch[1].trim();
+      if (candidate.length > 2 && candidate.length < 25) {
+        deadline = capitalizeFirstLetter(candidate);
+      }
+    }
   }
 
-  // Extract References
-  if (fullText.includes('earthy tones') || fullText.includes('minimal') || fullText.includes('modern')) {
-    let refs = [];
-    if (fullText.includes('earthy tones')) refs.push('Earthy tones');
-    if (fullText.includes('minimal')) refs.push('Minimal');
-    if (fullText.includes('modern')) refs.push('Modern');
-    if (fullText.includes('reference') || fullText.includes('attached') || fullText.includes('mood board') || fullText.includes('logo is attached')) refs.push('References attached');
-    references = refs.join(', ');
-  } else if (fullText.includes('no brand guidelines') || fullText.includes('no guidelines')) {
-    references = 'None / Clean slate';
-  } else if (fullText.includes('mood board') || fullText.includes('attached') || fullText.includes('guidelines') || fullText.includes('logo is attached')) {
-    references = 'References attached';
+  // 4. Extract References & Guidelines (Generalized Style Adjectives, Colors, and Files)
+  let refsList = [];
+  
+  // Style adjectives
+  const styleKeywords = ['minimal', 'modern', 'earthy', 'clean', 'bold', 'vibrant', 'aesthetic', 'asthetic', 'classic', 'retro', 'vintage', 'elegant', 'professional', 'creative', 'corporate', 'luxury', 'sleek', 'dark', 'light', 'colorful', 'monochrome', 'neon'];
+  styleKeywords.forEach(word => {
+    if (fullText.includes(word)) {
+      // Standardize typo
+      if (word === 'asthetic') {
+        refsList.push('Aesthetic');
+      } else {
+        refsList.push(capitalizeFirstLetter(word));
+      }
+    }
+  });
+
+  // Color keywords
+  const colorKeywords = ['earthy tones', 'color', 'palette', 'green', 'blue', 'red', 'yellow', 'black', 'white', 'gray', 'grey', 'pink', 'orange', 'purple', 'brown'];
+  colorKeywords.forEach(color => {
+    if (fullText.includes(color) && !refsList.map(r => r.toLowerCase()).includes(color)) {
+      refsList.push(capitalizeFirstLetter(color));
+    }
+  });
+
+  // Attachment/Guideline indicator
+  const attachmentKeywords = ['attached', 'reference', 'mood board', 'moodboard', 'guidelines', 'assets', 'file', 'link', 'logo is'];
+  let hasAttachment = false;
+  attachmentKeywords.forEach(kw => {
+    if (fullText.includes(kw)) {
+      hasAttachment = true;
+    }
+  });
+  if (hasAttachment) {
+    refsList.push('References attached');
   }
 
-  // Extract Budget
-  const budgetMatch = fullText.match(/(?:₹|rs\.?|inr|usd|\$|budget is|budget of)\s*([\d,]+[\s\-\d,]*|[\d,]+\s*k)/i);
+  // Guidelines check
+  if (fullText.includes('no brand guidelines') || fullText.includes('no guidelines') || fullText.includes('no reference')) {
+    refsList.push('None (Clean slate)');
+  }
+
+  // Filter duplicates (case insensitive)
+  const uniqueRefs = [];
+  const seen = new Set();
+  refsList.forEach(item => {
+    const lower = item.toLowerCase();
+    if (!seen.has(lower)) {
+      seen.add(lower);
+      uniqueRefs.push(item);
+    }
+  });
+
+  if (uniqueRefs.length > 0) {
+    references = uniqueRefs.join(', ');
+  }
+
+  // 5. Extract Budget
+  const budgetMatch = fullText.match(/(?:₹|rs\.?|inr|usd|\$|budget is|budget of|budget:)\s*([\d,]+[\s\-\d,]*|[\d,]+\s*k)/i);
   if (budgetMatch) {
+    let matchedVal = budgetMatch[1].trim().toLowerCase();
     let rawB = budgetMatch[0].toLowerCase();
+    
     if (rawB.includes('$') || rawB.includes('usd') || rawB.includes('500') || rawB.includes('800')) {
       budget = '₹40,000 - ₹60,000';
     } else {
-      let cleanVal = budgetMatch[1].trim();
-      budget = '₹' + cleanVal;
+      if (matchedVal.endsWith('k')) {
+        matchedVal = matchedVal.replace('k', ',000');
+      }
+      budget = '₹' + matchedVal.toUpperCase();
     }
-  } else if (fullText.includes('4000') || fullText.includes('4,000')) {
-    budget = '₹4,000';
+  } else {
+    // Look for loose numbers near budget references
+    const looseBudgetMatch = fullText.match(/(?:budget|price|cost|pay)\s*(?:is|around|of|:)?\s*(?:rs\.?|inr|₹)?\s*(\d[\d,]*)/i);
+    if (looseBudgetMatch && looseBudgetMatch[1]) {
+      budget = '₹' + looseBudgetMatch[1].trim();
+    } else if (fullText.includes('4000') || fullText.includes('4,000')) {
+      budget = '₹4,000';
+    }
   }
 
   const missing = [];
