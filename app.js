@@ -72,7 +72,7 @@ Your task is to analyze the communication history with a client and extract the 
 2. purpose: What it is for (e.g. coffee packaging, website, investor pitch). If unknown or vague, return null.
 3. deadline: Desired deadline. If unknown, return null.
 4. references: Brand guidelines, color schemes, or references. If they mention earthy tones or clean/minimal, or references attached, capture it. If unknown, return null.
-5. budget: Budget range. If unknown or not specified, return null.
+5. budget: Budget range. Capture the budget in Indian Rupees (INR / ₹ / Rs). If the user specifies dollars, convert it to INR (e.g., $500-$800 is approximately ₹40,000 - ₹60,000). Always format the output with the ₹ symbol (e.g., ₹40,000 - ₹60,000 or ₹4,000). If unknown or not specified, return null.
 
 You MUST respond in JSON format matching this schema:
 {
@@ -172,15 +172,17 @@ function parseClientTextHeuristic(history) {
   }
 
   // Extract Budget
-  const budgetMatch = fullText.match(/(?:\$|budget is|budget of|rs\s*|inr\s*)\s*(\d+[\s\-\d]*|\d+k)/i);
+  const budgetMatch = fullText.match(/(?:₹|rs\.?|inr|usd|\$|budget is|budget of)\s*([\d,]+[\s\-\d,]*|[\d,]+\s*k)/i);
   if (budgetMatch) {
-    if (fullText.includes('$500-$800')) {
-      budget = '$500 - $800';
-    } else if (fullText.includes('rs 4000') || fullText.includes('rs. 4000')) {
-      budget = 'Rs 4,000';
+    let rawB = budgetMatch[0].toLowerCase();
+    if (rawB.includes('$') || rawB.includes('usd') || rawB.includes('500') || rawB.includes('800')) {
+      budget = '₹40,000 - ₹60,000';
     } else {
-      budget = budgetMatch[0].toUpperCase();
+      let cleanVal = budgetMatch[1].trim();
+      budget = '₹' + cleanVal;
     }
+  } else if (fullText.includes('4000') || fullText.includes('4,000')) {
+    budget = '₹4,000';
   }
 
   const missing = [];
@@ -398,7 +400,7 @@ function generateAIResponse(missing) {
   const questions = {
     purpose: `• What is the ${assetType} being used for? (e.g. ${purposeExamples})`,
     deadline: "• What is your desired deadline for this project?",
-    budget: "• What is your estimated budget range?",
+    budget: "• What is your estimated budget range? (e.g. ₹40,000 - ₹60,000)",
     design_type: "• What type of design assets do you need? (e.g., logo, presentation, social creatives)",
     references: "• Do you have any brand guidelines, references, or mood boards you'd like us to follow?"
   };
@@ -466,7 +468,7 @@ elClientInput.addEventListener('keydown', (e) => {
 });
 
 elPresetComplete.addEventListener('click', () => {
-  elClientInput.value = "The logo is for coffee packaging and our website. We need it in 10 days. Budget is $500-$800. References attached.";
+  elClientInput.value = "The logo is for coffee packaging and our website. We need it in 10 days. Budget is ₹40,000 - ₹60,000. References attached.";
   highlightElement(elClientInput);
 });
 
